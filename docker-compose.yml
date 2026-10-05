@@ -1,0 +1,39 @@
+services:
+  backend:
+    build: ./backend
+    container_name: psan-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist updated GeoJSON files without rebuilding the image
+      - ./backend/data:/app/data
+    environment:
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:11434}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:7b}
+      LLM_API_MODE: ${LLM_API_MODE:-ollama}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-120}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - psan-network
+
+  frontend:
+    build: ./frontend
+    container_name: psan-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - psan-network
+
+networks:
+  psan-network:
+    driver: bridge

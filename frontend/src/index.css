@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Keep Leaflet panes below the dashboard overlays */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10;
+}
+
+.leaflet-container {
+  background: #0f172a;
+  font-family: inherit;
+}
+
+/* Custom range slider */
+input[type='range'].rvi-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #d97706, #ea580c, #dc2626);
+  outline: none;
+}
+input[type='range'].rvi-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f8fafc;
+  border: 2px solid #dc2626;
+  cursor: pointer;
+}
+input[type='range'].rvi-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f8fafc;
+  border: 2px solid #dc2626;
+  cursor: pointer;
+}

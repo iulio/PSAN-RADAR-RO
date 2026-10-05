@@ -1,0 +1,107 @@
+[
+  {
+    "survey_id": "test-survey-001",
+    "siruta": 210003,
+    "uat_name": "Test UAT",
+    "county": "Test County",
+    "site_type": "ISOLATED_HOUSEHOLD",
+    "location": {
+      "latitude": 45.0,
+      "longitude": 25.0,
+      "accuracy_meters": 5.0,
+      "timestamp": "2026-10-05T18:58:59.527546"
+    },
+    "surveyor_name": "Test Engineer",
+    "energy_audit": {
+      "current_power_source": "NONE",
+      "roof_type": "SHEET_METAL",
+      "roof_orientation": "SOUTH",
+      "estimated_daily_kwh_need": 3.5
+    },
+    "sanitation_audit": {
+      "water_source": "NONE_HAULED",
+      "current_toilet_type": "NONE",
+      "distance_to_nearest_well_meters": 100.0,
+      "suitable_land_for_wetland": true
+    },
+    "social_vulnerability": {
+      "inhabitant_count": 4,
+      "minors_under_18": 2,
+      "school_age_children_not_attending": 1
+    },
+    "photos": [],
+    "verified_at": "2026-10-05T15:58:59.529990+00:00",
+    "verified_by": "field_engineer",
+    "ground_truth": true
+  },
+  {
+    "survey_id": "test-survey-002",
+    "siruta": 210003,
+    "uat_name": "Test UAT",
+    "county": "Test County",
+    "site_type": "RURAL_SCHOOL",
+    "location": {
+      "latitude": 45.1,
+      "longitude": 25.1,
+      "accuracy_meters": 3.0,
+      "timestamp": "2026-10-05T18:58:59.527570"
+    },
+    "surveyor_name": "Test Engineer",
+    "energy_audit": {
+      "current_power_source": "PORTABLE_GENSET",
+      "roof_type": "CERAMIC_TILE",
+      "roof_orientation": "SOUTH_EAST",
+      "estimated_daily_kwh_need": 15.0
+    },
+    "sanitation_audit": {
+      "water_source": "SHALLOW_WELL_UNTESTED",
+      "current_toilet_type": "OPEN_OUTHOUSE_DRY",
+      "distance_to_nearest_well_meters": 50.0,
+      "suitable_land_for_wetland": true
+    },
+    "social_vulnerability": {
+      "inhabitant_count": 120,
+      "minors_under_18": 100,
+      "school_age_children_not_attending": 10
+    },
+    "photos": [],
+    "verified_at": "2026-10-05T15:58:59.529990+00:00",
+    "verified_by": "field_engineer",
+    "ground_truth": true
+  },
+  {
+    "survey_id": "test-duplicate-001",
+    "siruta": 210003,
+    "uat_name": "Test UAT",
+    "county": "Test County",
+    "site_type": "ISOLATED_HOUSEHOLD",
+    "location": {
+      "latitude": 45.0,
+      "longitude": 25.0,
+      "accuracy_meters": 5.0,
+      "timestamp": "2026-10-05T18:59:00.958352"
+    },
+    "surveyor_name": "Test Engineer",
+    "energy_audit": {
+      "current_power_source": "NONE",
+      "roof_type": "SHEET_METAL",
+      "roof_orientation": "SOUTH",
+      "estimated_daily_kwh_need": 3.5
+    },
+    "sanitation_audit": {
+      "water_source": "NONE_HAULED",
+      "current_toilet_type": "NONE",
+      "distance_to_nearest_well_meters": 100.0,
+      "suitable_land_for_wetland": true
+    },
+    "social_vulnerability": {
+      "inhabitant_count": 4,
+      "minors_under_18": 2,
+      "school_age_children_not_attending": 1
+    },
+    "photos": [],
+    "verified_at": "2026-10-05T15:59:00.959302+00:00",
+    "verified_by": "field_engineer",
+    "ground_truth": true
+  }
+]
