@@ -1,14 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import L from 'leaflet'
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   Radar, Filter, FileDown, Sparkles, Droplets, Zap, GraduationCap,
   AlertTriangle, Loader2, X, ClipboardCheck, Calculator, Scale,
   Users, PackageCheck, CheckCircle2, MapPin, ShieldCheck, Layers,
-  Plus, Trash2, Truck, RotateCcw
+  Plus, Trash2, Truck, RotateCcw, Map, Globe, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import FieldSurveyPWA from './components/FieldSurveyPWA'
 import LiveTelemetryWidget from './components/LiveTelemetryWidget'
+import NationalRadarMap from './components/NationalRadarMap'
 
 const CSR_CATEGORIES = [
   { value: 'SOLAR_PV', label: 'Panouri Fotovoltaice 450Wp Tier-1', unit: 'pcs', defaultPrice: 185 },
@@ -36,90 +35,6 @@ const TIER_STYLES = {
   CRITICAL: { fill: '#ef4444', border: '#dc2626', badge: 'bg-red-600', label: 'CRITICAL' },
   HIGH: { fill: '#f97316', border: '#ea580c', badge: 'bg-orange-600', label: 'HIGH' },
   MODERATE: { fill: '#eab308', border: '#ca8a04', badge: 'bg-yellow-600', label: 'MODERATE' },
-}
-
-const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY || 'cb1_4b12_1_1ae077e9d5bdca8ce4f44f4d'
-
-const BASEMAPS = {
-  dark: {
-    label: 'Dark Matter',
-    url: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${CARTO_API_KEY}`,
-    subdomains: 'abcd',
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-  },
-  positron: {
-    label: 'Positron Light',
-    url: `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?api_key=${CARTO_API_KEY}`,
-    subdomains: 'abcd',
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-  },
-  satellite: {
-    label: 'Satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    subdomains: undefined,
-    attribution: '&copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
-  },
-}
-
-const tierStyle = (tier) => TIER_STYLES[tier] || TIER_STYLES.MODERATE
-
-function styleFeature(feature) {
-  const rvi = Number(feature?.properties?.rvi_score ?? 0)
-  let fillColor = '#eab308'
-  if (rvi >= 75) fillColor = '#ef4444'
-  else if (rvi >= 50) fillColor = '#f97316'
-  return {
-    fillColor,
-    fillOpacity: 0.55,
-    color: 'rgba(255, 255, 255, 0.2)',
-    weight: 1,
-  }
-}
-
-function pct(x) {
-  return `${(x * 100).toFixed(1)}%`
-}
-
-function eur(val) {
-  return `${Number(val || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR`
-}
-
-function MapResizeController({ geojson }) {
-  const map = useMap()
-  const fittedRef = useRef(false)
-
-  useEffect(() => {
-    const container = map.getContainer()
-    if (container) {
-      container._leaflet_map = map
-    }
-    const handleResize = () => {
-      map.invalidateSize()
-    }
-    const timer = setTimeout(() => map.invalidateSize(), 200)
-    window.addEventListener('resize', handleResize)
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [map])
-
-  useEffect(() => {
-    if (geojson && geojson.features && geojson.features.length > 0 && !fittedRef.current) {
-      try {
-        const tempLayer = L.geoJSON(geojson)
-        const bounds = tempLayer.getBounds()
-        if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [20, 20] })
-          fittedRef.current = true
-        }
-      } catch {
-        // fallback to default center
-      }
-    }
-  }, [geojson, map])
-
-  return null
 }
 
 // ============================================================================
@@ -1240,92 +1155,41 @@ function DossierPanel({ siruta, onClose, onStartSurvey }) {
 
 export default function App() {
   const [activeView, setActiveView] = useState('map') // 'map' | 'survey'
-  const [surveyInitialUat, setSurveyInitialUat] = useState(null)
-  const [basemap, setBasemap] = useState('dark')
-  const [geojson, setGeojson] = useState(null)
-  const [minRvi, setMinRvi] = useState(0)
-  const [county, setCounty] = useState('')
-  const [tier, setTier] = useState('')
-  const [requireOffgrid, setRequireOffgrid] = useState(false)
-  const [requireSanitation, setRequireSanitation] = useState(false)
-  const [requireEducation, setRequireEducation] = useState(false)
-  const [selected, setSelected] = useState(null)
-  const [backendOk, setBackendOk] = useState(true)
+    const [surveyInitialUat, setSurveyInitialUat] = useState(null)
+    const [minRvi, setMinRvi] = useState(0)
+    const [county, setCounty] = useState('')
+    const [tier, setTier] = useState('')
+    const [requireOffgrid, setRequireOffgrid] = useState(false)
+    const [requireSanitation, setRequireSanitation] = useState(false)
+    const [requireEducation, setRequireEducation] = useState(false)
+    const [selected, setSelected] = useState(null)
+    const [backendOk, setBackendOk] = useState(true)
+    const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [nationalCounties, setNationalCounties] = useState([])
 
-  useEffect(() => {
-    fetch('/api/v1/radar/geojson')
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
-      .then((data) => {
-        setGeojson(data)
-        setBackendOk(true)
-      })
-      .catch(() => {
-        setBackendOk(false)
-      })
-  }, [])
+    // Fetch counties for the filter dropdown (from national endpoint)
+    useEffect(() => {
+      fetch('/api/v1/geo/counties')
+        .then(r => r.ok ? r.json() : [])
+        .then(data => setNationalCounties(data))
+        .catch(() => setNationalCounties([]))
+    }, [])
 
-  const counties = useMemo(() => {
-    if (!geojson) return []
-    return [...new Set(geojson.features.map((f) => f.properties.county))].sort()
-  }, [geojson])
-
-  const filtered = useMemo(() => {
-    if (!geojson) return null
-    return {
-      ...geojson,
-      features: geojson.features.filter((f) => {
-        const p = f.properties
-        if (p.rvi_score < minRvi) return false
-        if (county && p.county !== county) return false
-        if (tier && p.priority_tier !== tier) return false
-        if (requireOffgrid && p.i_energy < 0.5) return false
-        if (requireSanitation && p.i_sanitation < 0.5) return false
-        if (requireEducation && p.i_education < 0.5) return false
-        return true
-      }),
-    }
-  }, [geojson, minRvi, county, tier, requireOffgrid, requireSanitation, requireEducation])
-
-  const onEachFeature = (feature, layer) => {
-    const p = feature.properties
-    layer.on({
-      click: () => setSelected(p.siruta),
-      mouseover: (e) => {
-        const target = e.target
-        target.setStyle({
-          weight: 2.5,
-          color: '#38bdf8',
-          fillOpacity: 0.85,
-        })
-        if (target.bringToFront) {
-          target.bringToFront()
-        }
-      },
-      mouseout: (e) => {
-        e.target.setStyle(styleFeature(feature))
-      },
-    })
-    layer.bindTooltip(
-      `<strong>${p.uat_name} (${p.county})</strong><br/>RVI Score: <b>${Number(p.rvi_score).toFixed(1)}</b> (${p.priority_tier})`,
-      { sticky: true, direction: 'top' }
-    )
-  }
+    const handleUATSelect = useCallback((properties) => {
+      setSelected(properties.siruta)
+      setSidebarOpen(true)
+    }, [])
 
   if (activeView === 'survey') {
+      return (
+        <FieldSurveyPWA
+          initialUat={surveyInitialUat}
+          onBackToMap={() => setActiveView('map')}
+        />
+      )
+    }
+
     return (
-      <FieldSurveyPWA
-        initialUat={surveyInitialUat}
-        onBackToMap={() => setActiveView('map')}
-      />
-    )
-  }
-
-  const activeBasemap = BASEMAPS[basemap] || BASEMAPS.dark
-
-  return (
     <div className="relative flex h-full flex-col bg-slate-950">
       <header className="z-20 flex flex-wrap items-center gap-3 border-b border-slate-800 bg-slate-900 px-5 py-3">
         <Radar className="text-orange-500" size={24} />
@@ -1352,7 +1216,14 @@ export default function App() {
           >
             <ClipboardCheck size={15} /> Field Survey
           </button>
-        </div>
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(v => !v)}
+                    className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-600 hover:border-slate-400 transition"
+                  >
+                    {sidebarOpen ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
+                  </button>
+                </div>
       </header>
 
       <div className="z-20 flex flex-wrap items-center gap-4 border-b border-slate-800 bg-slate-900/95 px-5 py-2.5">
@@ -1378,7 +1249,7 @@ export default function App() {
           className="rounded-lg bg-slate-800 px-2.5 py-1 text-sm font-medium text-white border border-slate-600 focus:border-sky-400 focus:outline-none"
         >
           <option value="">Toate județele (County)</option>
-          {counties.map((c) => (
+                  {nationalCounties.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
@@ -1431,60 +1302,58 @@ export default function App() {
           </button>
         </div>
 
-        <span className="ml-auto rounded-full border border-emerald-500/40 bg-emerald-950/70 px-3 py-1 text-xs font-bold text-emerald-300">
-          {filtered ? `${filtered.features.length.toLocaleString('ro-RO')} UAT-uri active` : '…'}
+                <span className="ml-auto rounded-full border border-emerald-500/40 bg-emerald-950/70 px-3 py-1 text-xs font-bold text-emerald-300">
+          {nationalCounties.length > 0 ? 'Național: 3,181 UAT-uri' : '…'}
         </span>
       </div>
 
-      <div className="relative flex-1">
-        <MapContainer center={[46.4, 27.3]} zoom={7} maxZoom={19} className="h-full w-full bg-slate-950">
-          <MapResizeController geojson={geojson} />
-          <TileLayer
-            key={basemap}
-            attribution={activeBasemap.attribution}
-            url={activeBasemap.url}
-            subdomains={activeBasemap.subdomains || 'abcd'}
-            maxZoom={19}
+      <div className="relative flex-1 flex overflow-hidden">
+        {/* National Radar Map - Left Panel */}
+        <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'w-3/4' : 'w-full'}`}>
+          <NationalRadarMap
+            onSelectUAT={handleUATSelect}
+            initialCounty={county || undefined}
+            initialMinRvi={minRvi / 100}
           />
-          {filtered && (
-            <GeoJSON
-              key={JSON.stringify([minRvi, county, tier, requireOffgrid, requireSanitation, requireEducation])}
-              data={filtered}
-              style={styleFeature}
-              onEachFeature={onEachFeature}
-            />
-          )}
-        </MapContainer>
-
-        {/* Corner Basemap Switcher (Dark Matter vs Positron vs Satellite) */}
-        <div className="pointer-events-auto absolute left-14 top-3 z-10 flex items-center gap-1 rounded-lg border border-slate-700/80 bg-slate-900/85 p-1 text-[11px] text-slate-200 shadow-xl backdrop-blur-md">
-          <Layers size={13} className="ml-1.5 mr-1 text-sky-400" />
-          {Object.entries(BASEMAPS).map(([key, cfg]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setBasemap(key)}
-              className={`rounded px-2 py-1 font-semibold transition ${
-                basemap === key ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {cfg.label}
-            </button>
-          ))}
         </div>
 
-        <LiveTelemetryWidget selectedSiruta={selected} />
+        {/* Right Sidebar - UAT Detail Panel */}
+        {sidebarOpen && (
+          <div className="w-1/4 min-w-[380px] max-w-[480px] border-l border-slate-800 bg-slate-900/95 flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+              <h2 className="text-lg font-semibold text-white">Detalii UAT</h2>
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="p-1 rounded hover:bg-slate-800 text-slate-400 transition"
+                aria-label="Close sidebar"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-        {selected && (
-          <DossierPanel
-            siruta={selected}
-            onClose={() => setSelected(null)}
-            onStartSurvey={(uatProfile) => {
-              setSurveyInitialUat(uatProfile)
-              setActiveView('survey')
-            }}
-          />
+            {selected ? (
+              <DossierPanel
+                siruta={selected}
+                onClose={() => setSelected(null)}
+                onStartSurvey={(uatProfile) => {
+                  setSurveyInitialUat(uatProfile)
+                  setActiveView('survey')
+                }}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center p-6">
+                <div className="text-center text-slate-500">
+                  <MapPin size={48} className="mx-auto mb-4 opacity-30" />
+                  <p className="text-base font-medium text-slate-300">Selectează un UAT</p>
+                  <p className="text-sm mt-1">Click pe hartă pentru detalii complete</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
+
+        <LiveTelemetryWidget selectedSiruta={selected} />
       </div>
     </div>
   )

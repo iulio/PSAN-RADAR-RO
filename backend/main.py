@@ -59,6 +59,7 @@ from materials_marketplace import (
     optimize_csr_materials_for_uat,
     revoke_csr_allocation,
 )
+from app.routers.geo_national import router as geo_national_router
 
 # =============================================================================
 # CONFIGURATION
@@ -419,6 +420,7 @@ app.include_router(field_surveys_router)
 app.include_router(telemetry_router)
 app.include_router(volunteers_router)
 app.include_router(marketplace_router)
+app.include_router(geo_national_router)
 
 # Register cache invalidation hook so field survey syncs update O(1) index immediately
 register_geojson_update_callback(reload_geospatial_store)
